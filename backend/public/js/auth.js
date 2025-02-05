@@ -9,7 +9,7 @@ async function signup(username, firstname, lastname, password) {
 
     if (response.ok) {
         alert('Signup successful! You can now log in.');
-        window.location.href = "views/login.html"; 
+        window.location.href = "login.html"; 
     } else {
         alert(data.message || "Signup failed.");
     }
@@ -26,7 +26,7 @@ async function login(username, password) {
 
     if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data)); 
-        window.location.href = "views/chat.html"; 
+        window.location.href = "chat.html"; 
     } else {
         alert(data.message || "Login failed.");
     }
@@ -36,7 +36,7 @@ function checkUserSession() {
     const user = localStorage.getItem('user');
 
     if (!user) {
-        window.location.href = "views/login.html"; 
+        window.location.href = "login.html"; 
     }
 }
 
@@ -49,7 +49,7 @@ async function logout() {
 
     await fetch('/api/users/logout', { method: 'POST' }); 
     
-    window.location.href = "views/login.html"; 
+    window.location.href = "login.html"; 
 }
 
 document.addEventListener("DOMContentLoaded", () => {

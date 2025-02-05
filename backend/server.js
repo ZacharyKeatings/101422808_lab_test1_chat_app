@@ -16,15 +16,46 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+let users = {};
+
 io.on('connection', (socket) => {
-    console.log('A user connected');
+    console.log('A user connected:', socket.id);
+
+    socket.on('joinRoom', ({ username, room }) => {
+        socket.join(room);
+        users[socket.id] = { username, room };
+
+        socket.broadcast.to(room).emit('message', {
+            username: 'System',
+            message: `${username} has joined the chat`,
+        });
+    });
+
+    socket.on('sendMessage', ({ message }) => {
+        const user = users[socket.id];
+        if (user) {
+            console.log(`Message received from ${user.username}: ${message}`);
+            io.to(user.room).emit('message', {
+                username: user.username,
+                message: message,
+            });
+        } else {
+            console.log("User not found in room.");
+        }
+    });
 
     socket.on('disconnect', () => {
-        console.log('A user disconnected');
+        const user = users[socket.id];
+        if (user) {
+            io.to(user.room).emit('message', {
+                username: 'System',
+                message: `${user.username} has left the chat`,
+            });
+            delete users[socket.id];
+        }
+        console.log('User disconnected:', socket.id);
     });
 });
-
-module.exports = io;
 
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
