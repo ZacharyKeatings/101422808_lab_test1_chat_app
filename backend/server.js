@@ -5,6 +5,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
 const path = require('path');
+const Message = require('./models/Message');
+const moment = require('moment');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,9 +23,12 @@ let users = {};
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
-    socket.on('joinRoom', ({ username, room }) => {
+    socket.on('joinRoom', async ({ username, room }) => {
         socket.join(room);
         users[socket.id] = { username, room };
+
+        const messages = await Message.find({ room }).sort({ date_sent: -1 }).limit(10);
+        socket.emit('loadMessages', messages.reverse());
 
         socket.broadcast.to(room).emit('message', {
             username: 'System',
@@ -31,17 +36,35 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on('sendMessage', ({ message }) => {
+    socket.on('sendMessage', async ({ message }) => {
         const user = users[socket.id];
         if (user) {
-            console.log(`Message received from ${user.username}: ${message}`);
+            const timestamp = moment().format('hh:mm A');
+
+            const newMessage = new Message({
+                from_user: user.username,
+                room: user.room,
+                message: message,
+                date_sent: new Date()
+            });
+
+            await newMessage.save();
+
             io.to(user.room).emit('message', {
                 username: user.username,
                 message: message,
+                time: timestamp
             });
-        } else {
-            console.log("User not found in room.");
         }
+    });
+
+    socket.on('leaveRoom', ({ username, room }) => {
+        socket.leave(room);
+        io.to(room).emit('message', {
+            username: 'System',
+            message: `${username} has left the chat`,
+        });
+        delete users[socket.id];
     });
 
     socket.on('disconnect', () => {
