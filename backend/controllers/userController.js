@@ -54,4 +54,9 @@ const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-module.exports = { registerUser, loginUser };
+const logoutUser = async (req, res) => {
+    res.status(200).json({ message: 'User logged out successfully' });
+};
+
+
+module.exports = { registerUser, loginUser, logoutUser };
