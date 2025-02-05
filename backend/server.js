@@ -4,6 +4,7 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const connectDB = require('./config/db');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,6 +14,7 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
     console.log('A user connected');
