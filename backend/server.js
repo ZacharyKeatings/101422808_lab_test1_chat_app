@@ -27,12 +27,16 @@ io.on('connection', (socket) => {
         socket.join(room);
         users[socket.id] = { username, room };
 
+        io.emit('updateUserList', Object.values(users).map(user => user.username));
+
         const messages = await Message.find({ room }).sort({ date_sent: -1 }).limit(10);
         socket.emit('loadMessages', messages.reverse());
 
+        const timestamp = moment().format('hh:mm A');
         socket.broadcast.to(room).emit('message', {
             username: 'System',
             message: `${username} has joined the chat`,
+            time: timestamp
         });
     });
 
@@ -45,7 +49,6 @@ io.on('connection', (socket) => {
                 from_user: user.username,
                 room: user.room,
                 message: message,
-                date_sent: new Date()
             });
 
             await newMessage.save();
@@ -56,6 +59,41 @@ io.on('connection', (socket) => {
                 time: timestamp
             });
         }
+    });
+
+    socket.on('sendPrivateMessage', async ({ to_user, message }) => {
+        const from_user = users[socket.id]?.username;
+        if (!from_user) return;
+
+        const timestamp = moment().format('hh:mm A');
+
+        const newMessage = new Message({
+            from_user,
+            to_user,
+            message: message
+        });
+
+        await newMessage.save();
+
+        const recipientSocket = Object.keys(users).find(
+            key => users[key].username === to_user
+        );
+
+        if (recipientSocket) {
+            io.to(recipientSocket).emit('privateMessage', {
+                from_user,
+                message,
+                time: timestamp
+            });
+        }
+    });
+
+    socket.on('typing', ({ username, room }) => {
+        socket.broadcast.to(room).emit('userTyping', { username });
+    });
+    
+    socket.on('stopTyping', ({ room }) => {
+        socket.broadcast.to(room).emit('userStoppedTyping');
     });
 
     socket.on('leaveRoom', ({ username, room }) => {
@@ -69,6 +107,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const user = users[socket.id];
+        io.emit('updateUserList', Object.values(users).map(user => user.username));
         if (user) {
             io.to(user.room).emit('message', {
                 username: 'System',

@@ -47,6 +47,10 @@ $(document).ready(() => {
         }
     });
 
+    function scrollToBottom() {
+        $('#chatContainer').animate({ scrollTop: $('#chatContainer')[0].scrollHeight }, 300);
+    }
+
     socket.on('message', (data) => {
         $('#chatMessages').append(`
             <li class="list-group-item">
@@ -54,12 +58,13 @@ $(document).ready(() => {
                 <strong>${data.username}:</strong> ${data.message}
             </li>
         `);
+        scrollToBottom();
     });
 
     socket.on('loadMessages', (messages) => {
-        $('#chatMessages').empty(); // Clear existing messages
+        $('#chatMessages').empty();
         messages.forEach((msg) => {
-            const time = moment(msg.date_sent).format('hh:mm A'); // Format stored timestamp
+            const time = moment(msg.date_sent).format('hh:mm A'); 
             $('#chatMessages').append(`
                 <li class="list-group-item">
                     <small class="text-muted">${time}</small><br>
@@ -67,6 +72,60 @@ $(document).ready(() => {
                 </li>
             `);
         });
+        scrollToBottom();
+    });
+
+    $('#sendPrivateMessageBtn').on('click', function () {
+        const to_user = $('#privateUserSelect').val();
+        const message = $('#privateMessageInput').val().trim();
+        if (to_user && message) {
+            socket.emit('sendPrivateMessage', { to_user, message });
+            $('#privateMessageInput').val('');
+        }
+    });
+
+    socket.on('privateMessage', (data) => {
+        $('#chatMessages').append(`
+            <li class="list-group-item bg-light">
+                <small class="text-muted">${data.time} (Private)</small><br>
+                <strong>${data.from_user}:</strong> ${data.message}
+            </li>
+        `);
+    });
+
+    socket.on('updateUserList', (userList) => {
+        $('#privateUserSelect').empty().append('<option value="">Select a user to message privately</option>');
+        
+        userList.forEach((username) => {
+            if (username !== user.username) { 
+                $('#privateUserSelect').append(`<option value="${username}">${username}</option>`);
+            }
+        });
+    
+        if (userList.length > 1) {
+            $('#privateMessageInput, #sendPrivateMessageBtn').prop("disabled", false);
+        } else {
+            $('#privateMessageInput, #sendPrivateMessageBtn').prop("disabled", true);
+        }
+    });
+
+        let typingTimeout;
+
+    $('#messageInput').on('input', function () {
+        socket.emit('typing', { username: user.username, room: currentRoom });
+
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            socket.emit('stopTyping', { room: currentRoom });
+        }, 2000); 
+    });
+
+    socket.on('userTyping', (data) => {
+        $('#typingIndicator').text(`${data.username} is typing...`);
+    });
+
+    socket.on('userStoppedTyping', () => {
+        $('#typingIndicator').text('');
     });
 
     $('#logoutBtn').on('click', function () {

@@ -12,7 +12,14 @@
 
     <div class="container">
         <h2 class="mt-3">Chat Room</h2>
-        <button class="btn btn-danger float-end" id="logoutBtn">Logout</button>
+
+        <div class="mt-3">
+            <select id="privateUserSelect" class="form-control">
+                <option value="">Select a user to message privately</option>
+            </select>
+            <input type="text" class="form-control mt-2" id="privateMessageInput" placeholder="Type a private message..." disabled>
+            <button class="btn btn-secondary mt-2" id="sendPrivateMessageBtn" disabled>Send Private Message</button>
+        </div>
 
         <div class="mt-3">
             <select id="roomSelect" class="form-control">
@@ -25,8 +32,12 @@
             <button class="btn btn-warning mt-2" id="leaveRoomBtn" style="display: none;">Leave Room</button>
         </div>
 
-        <div class="mt-3">
+        <div class="mt-3" id="chatContainer" style="height: 38vh; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
             <ul id="chatMessages" class="list-group"></ul>
+        </div>
+
+        <div class="mt-2">
+            <p id="typingIndicator" class="text-muted"></p>
         </div>
 
         <div class="mt-3">
@@ -35,6 +46,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/auth.js"></script>
@@ -42,7 +54,7 @@
     <script>
         $(document).ready(() => {
             $("#header").load("/views/header.html", function() {
-                const user = getUser(); // Check if user is logged in
+                const user = getUser();
 
                 if (user) {
                     $('#loginNav, #signupNav').hide();
