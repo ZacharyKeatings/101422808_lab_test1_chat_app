@@ -10,9 +10,9 @@
 
     <div id="header"></div>
 
-    <div class="container d-flex align-items-center justify-content-center vh-100">
-        <div class="row justify-content-center">
-            <div class="col-md-4">
+    <div class="container d-flex flex-column align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="row justify-content-center w-100">
+            <div class="col-md-6 col-lg-4">
                 <h2 class="text-center">Sign Up</h2>
                 <form id="signupForm">
                     <div class="mb-3">
@@ -43,7 +43,7 @@
     <script>
         $(document).ready(() => {
             $("#header").load("/views/header.html", function() {
-                const user = getUser(); // Check if user is logged in
+                const user = getUser(); 
 
                 if (user) {
                     $('#loginNav, #signupNav').hide();
@@ -57,18 +57,12 @@
 
         $('#signupForm').on('submit', function(e) {
             e.preventDefault();
-            const userData = {
-                username: $('#username').val(),
-                firstname: $('#firstname').val(),
-                lastname: $('#lastname').val(),
-                password: $('#password').val()
-            };
-            $.post('/api/users/signup', userData, function(response) {
-                alert('Signup successful! Please login.');
-                window.location.href = "login.html";
-            }).fail(function(error) {
-                alert(error.responseJSON.message || "Signup failed.");
-            });
+            signup(
+                $('#username').val(),
+                $('#firstname').val(),
+                $('#lastname').val(),
+                $('#password').val()
+            );
         });
     </script>
 </body>
